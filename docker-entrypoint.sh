@@ -23,14 +23,13 @@ if [ "$(id -u)" = '0' ]; then
     chown node:node /data 2>/dev/null || true
   fi
 
-  # Seed default openclaw.json with container-friendly defaults when
-  # OPENCLAW_STATE_DIR is set and no config file exists yet.
+  # Write managed openclaw.json on every start so config updates
+  # propagate on redeploy without needing to delete the volume.
   # OpenClaw supports ${VAR} substitution in config values, so secrets
   # are read from environment variables at runtime.
   if [ -n "${OPENCLAW_STATE_DIR:-}" ]; then
     _cfg="$OPENCLAW_STATE_DIR/openclaw.json"
-    if [ ! -f "$_cfg" ]; then
-      cat > "$_cfg" <<'SEED'
+    cat > "$_cfg" <<'SEED'
 {
   "gateway": {
     "trustedProxies": ["100.64.0.0/10"],
@@ -64,8 +63,7 @@ if [ "$(id -u)" = '0' ]; then
   }
 }
 SEED
-      chown node:node "$_cfg"
-    fi
+    chown node:node "$_cfg"
   fi
 
   exec gosu node "$@"
