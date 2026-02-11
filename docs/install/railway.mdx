@@ -72,13 +72,18 @@ add the following to your `openclaw.json` config (created by the setup wizard un
 ```json
 {
   "gateway": {
-    "trustedProxies": ["100.64.0.0/10"]
+    "trustedProxies": ["100.64.0.0/10"],
+    "controlUi": {
+      "dangerouslyDisableDeviceAuth": true
+    }
   }
 }
 ```
 
-Without this, the gateway logs `Proxy headers detected from untrusted address` warnings
-and the Control UI WebSocket connections may not be treated as expected.
+- `trustedProxies` — without this, the gateway logs `Proxy headers detected from untrusted address` warnings.
+- `dangerouslyDisableDeviceAuth` — disables device pairing for the Control UI. On Railway there is no local/CLI access to approve pairing requests, so gateway token auth is used instead.
+
+> **Note:** Fresh deployments seed this config automatically via the Docker entrypoint. If you already have an `openclaw.json`, merge the keys above into it.
 
 ## Setup flow
 

@@ -23,6 +23,28 @@ if [ "$(id -u)" = '0' ]; then
     chown node:node /data 2>/dev/null || true
   fi
 
+  # Seed default openclaw.json with container-friendly defaults when
+  # OPENCLAW_STATE_DIR is set and no config file exists yet.
+  # This disables device pairing for the Control UI (not needed when
+  # gateway token auth is already configured) and trusts the platform's
+  # internal reverse-proxy network (Railway/Render use 100.64.0.0/10).
+  if [ -n "${OPENCLAW_STATE_DIR:-}" ]; then
+    _cfg="$OPENCLAW_STATE_DIR/openclaw.json"
+    if [ ! -f "$_cfg" ]; then
+      cat > "$_cfg" <<'SEED'
+{
+  "gateway": {
+    "trustedProxies": ["100.64.0.0/10"],
+    "controlUi": {
+      "dangerouslyDisableDeviceAuth": true
+    }
+  }
+}
+SEED
+      chown node:node "$_cfg"
+    fi
+  fi
+
   exec gosu node "$@"
 fi
 
