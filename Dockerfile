@@ -1,4 +1,4 @@
-FROM node:22-bookworm
+FROM node:22-bookworm-slim
 
 # Install Bun (required for build scripts)
 RUN curl -fsSL https://bun.sh/install | bash
