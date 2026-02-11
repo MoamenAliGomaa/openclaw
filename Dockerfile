@@ -35,6 +35,10 @@ ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
 ENV NODE_ENV=production
+# Default state directory so docker-entrypoint.sh always writes the
+# managed openclaw.json (trustedProxies, controlUi, agents, etc.).
+# Railway/Render/Fly users can override via their own env var.
+ENV OPENCLAW_STATE_DIR=/data/.openclaw
 
 # Allow non-root user to write temp files during runtime/tests.
 RUN chown -R node:node /app
