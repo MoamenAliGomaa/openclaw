@@ -25,9 +25,8 @@ if [ "$(id -u)" = '0' ]; then
 
   # Seed default openclaw.json with container-friendly defaults when
   # OPENCLAW_STATE_DIR is set and no config file exists yet.
-  # This disables device pairing for the Control UI (not needed when
-  # gateway token auth is already configured) and trusts the platform's
-  # internal reverse-proxy network (Railway/Render use 100.64.0.0/10).
+  # OpenClaw supports ${VAR} substitution in config values, so secrets
+  # are read from environment variables at runtime.
   if [ -n "${OPENCLAW_STATE_DIR:-}" ]; then
     _cfg="$OPENCLAW_STATE_DIR/openclaw.json"
     if [ ! -f "$_cfg" ]; then
@@ -38,6 +37,30 @@ if [ "$(id -u)" = '0' ]; then
     "controlUi": {
       "dangerouslyDisableDeviceAuth": true
     }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-5"
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "mcp": {
+          "servers": [
+            {
+              "name": "luciq",
+              "url": "https://api.instabug.com/api/mcp",
+              "headers": {
+                "Email": "${INSTABUG_EMAIL}",
+                "Token": "${INSTABUG_TOKEN}"
+              }
+            }
+          ]
+        }
+      }
+    ]
   }
 }
 SEED
