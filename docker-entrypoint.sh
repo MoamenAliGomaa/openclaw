@@ -45,19 +45,7 @@ if [ "$(id -u)" = '0' ]; then
     },
     "list": [
       {
-        "id": "main",
-        "mcp": {
-          "servers": [
-            {
-              "name": "luciq",
-              "url": "https://api.instabug.com/api/mcp",
-              "headers": {
-                "Email": "${INSTABUG_EMAIL}",
-                "Token": "${INSTABUG_TOKEN}"
-              }
-            }
-          ]
-        }
+        "id": "main"
       }
     ]
   }
