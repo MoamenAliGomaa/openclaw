@@ -61,7 +61,24 @@ Set these variables on the service:
 - `PORT=8080` (required — must match the port in Public Networking)
 - `OPENCLAW_STATE_DIR=/data/.openclaw` (recommended)
 - `OPENCLAW_WORKSPACE_DIR=/data/workspace` (recommended)
-- `OPENCLAW_GATEWAY_TOKEN` (recommended; treat as an admin secret)
+- `OPENCLAW_GATEWAY_TOKEN` (required for Control UI — generate with `openssl rand -hex 32`; treat as an admin secret)
+
+### Trusted Proxies
+
+Railway routes traffic through internal reverse proxies (`100.64.0.0/10`).
+To allow the gateway to correctly identify client IPs behind Railway's proxy,
+add the following to your `openclaw.json` config (created by the setup wizard under `/data/.openclaw/`):
+
+```json
+{
+  "gateway": {
+    "trustedProxies": ["100.64.0.0/10"]
+  }
+}
+```
+
+Without this, the gateway logs `Proxy headers detected from untrusted address` warnings
+and the Control UI WebSocket connections may not be treated as expected.
 
 ## Setup flow
 
