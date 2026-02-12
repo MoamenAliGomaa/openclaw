@@ -28,6 +28,25 @@ if [ "$(id -u)" = '0' ]; then
   # OpenClaw supports ${VAR} substitution in config values, so secrets
   # are read from environment variables at runtime.
   if [ -n "${OPENCLAW_STATE_DIR:-}" ]; then
+    # Write MCP config with Luciq server (shell expands env vars here)
+    _mcp="$OPENCLAW_STATE_DIR/mcp.json"
+    cat > "$_mcp" <<MCP
+{
+  "mcpServers": {
+    "luciq": {
+      "url": "https://api.instabug.com/api/mcp",
+      "headers": {
+        "Email": "${INSTABUG_EMAIL:-}",
+        "Token": "${INSTABUG_TOKEN:-}"
+      }
+    }
+  }
+}
+MCP
+    chown node:node "$_mcp"
+
+    # Write openclaw.json (single-quoted SEED = no shell expansion;
+    # openclaw's own ${VAR} substitution handles env refs at load time)
     _cfg="$OPENCLAW_STATE_DIR/openclaw.json"
     cat > "$_cfg" <<'SEED'
 {
@@ -40,7 +59,27 @@ if [ "$(id -u)" = '0' ]; then
   "agents": {
     "defaults": {
       "model": {
-        "primary": "anthropic/claude-sonnet-4-5"
+        "primary": "claude-cli/claude-sonnet-4-5"
+      },
+      "cliBackends": {
+        "claude-cli": {
+          "command": "claude",
+          "args": [
+            "-p",
+            "--output-format", "json",
+            "--dangerously-skip-permissions",
+            "--mcp-config", "/data/.openclaw/mcp.json"
+          ],
+          "output": "json",
+          "input": "arg",
+          "modelArg": "--model",
+          "sessionArg": "--session-id",
+          "sessionMode": "always",
+          "systemPromptArg": "--append-system-prompt",
+          "systemPromptMode": "append",
+          "systemPromptWhen": "first",
+          "serialize": true
+        }
       }
     },
     "list": [

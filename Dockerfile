@@ -35,6 +35,9 @@ ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
 ENV NODE_ENV=production
+
+# Install Claude CLI so it can be used as a cliBackend (enables MCP support)
+RUN npm install -g @anthropic-ai/claude-code
 # Default state directory so docker-entrypoint.sh always writes the
 # managed openclaw.json (trustedProxies, controlUi, agents, etc.).
 # Railway/Render/Fly users can override via their own env var.
