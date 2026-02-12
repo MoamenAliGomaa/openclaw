@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+echo "[entrypoint] uid=$(id -u) OPENCLAW_STATE_DIR=${OPENCLAW_STATE_DIR:-<unset>} OPENCLAW_CONFIG_PATH=${OPENCLAW_CONFIG_PATH:-<unset>}"
+
 # When running as root (default in Docker), ensure data directories exist
 # and are writable by the non-root node user, then re-exec as node.
 # This is required on platforms like Railway/Render/Fly where volumes are
@@ -23,12 +25,10 @@ if [ "$(id -u)" = '0' ]; then
     chown node:node /data 2>/dev/null || true
   fi
 
-  # Write managed openclaw.json on every start so config updates
-  # propagate on redeploy without needing to delete the volume.
-  # OpenClaw supports ${VAR} substitution in config values, so secrets
-  # are read from environment variables at runtime.
+  # Write MCP config for Claude CLI (shell expands env vars here).
+  # The main openclaw.json is baked into the image via OPENCLAW_CONFIG_PATH,
+  # but mcp.json needs runtime env vars for credentials.
   if [ -n "${OPENCLAW_STATE_DIR:-}" ]; then
-    # Write MCP config with Luciq server (shell expands env vars here)
     _mcp="$OPENCLAW_STATE_DIR/mcp.json"
     cat > "$_mcp" <<MCP
 {
@@ -44,55 +44,19 @@ if [ "$(id -u)" = '0' ]; then
 }
 MCP
     chown node:node "$_mcp"
-
-    # Write openclaw.json (single-quoted SEED = no shell expansion;
-    # openclaw's own ${VAR} substitution handles env refs at load time)
-    _cfg="$OPENCLAW_STATE_DIR/openclaw.json"
-    cat > "$_cfg" <<'SEED'
-{
-  "gateway": {
-    "trustedProxies": ["100.64.0.0/10"],
-    "controlUi": {
-      "dangerouslyDisableDeviceAuth": true
-    }
-  },
-  "agents": {
-    "defaults": {
-      "model": {
-        "primary": "claude-cli/claude-sonnet-4-5"
-      },
-      "cliBackends": {
-        "claude-cli": {
-          "command": "claude",
-          "args": [
-            "-p",
-            "--output-format", "json",
-            "--dangerously-skip-permissions",
-            "--mcp-config", "/data/.openclaw/mcp.json"
-          ],
-          "output": "json",
-          "input": "arg",
-          "modelArg": "--model",
-          "sessionArg": "--session-id",
-          "sessionMode": "always",
-          "systemPromptArg": "--append-system-prompt",
-          "systemPromptMode": "append",
-          "systemPromptWhen": "first",
-          "serialize": true
-        }
-      }
-    },
-    "list": [
-      {
-        "id": "main"
-      }
-    ]
-  }
-}
-SEED
-    chown node:node "$_cfg"
+    echo "[entrypoint] wrote MCP config to $_mcp"
   fi
 
+  # Verify the baked-in config exists
+  if [ -n "${OPENCLAW_CONFIG_PATH:-}" ]; then
+    if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
+      echo "[entrypoint] config exists at $OPENCLAW_CONFIG_PATH"
+    else
+      echo "[entrypoint] WARNING: config NOT found at $OPENCLAW_CONFIG_PATH"
+    fi
+  fi
+
+  echo "[entrypoint] dropping to node user via gosu"
   exec gosu node "$@"
 fi
 

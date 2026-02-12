@@ -38,9 +38,14 @@ ENV NODE_ENV=production
 
 # Install Claude CLI so it can be used as a cliBackend (enables MCP support)
 RUN npm install -g @anthropic-ai/claude-code
-# Default state directory so docker-entrypoint.sh always writes the
-# managed openclaw.json (trustedProxies, controlUi, agents, etc.).
-# Railway/Render/Fly users can override via their own env var.
+
+# Bake gateway config into the image so it's always available regardless
+# of volume mounts or entrypoint issues.  docker-config.json is copied
+# by the earlier `COPY . .` step.
+ENV OPENCLAW_CONFIG_PATH=/app/docker-config.json
+
+# State directory for runtime data (sessions, MCP config, etc.).
+# docker-entrypoint.sh writes mcp.json here on every start.
 ENV OPENCLAW_STATE_DIR=/data/.openclaw
 
 # Allow non-root user to write temp files during runtime/tests.
